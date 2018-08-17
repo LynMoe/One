@@ -18,17 +18,14 @@ if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get(
     {
         goto fetch;
     } else {
-        //$file_type = json_decode($db->table($namespace)->where('path_md5',md5($path))->get()->type,true);
-        //header("Content-type: " . $file_type);
-
-        header('Content-Type: application/octet-stream');
+        $file_type = json_decode($db->table($namespace)->where('path_md5',md5($path))->get()->type,true);
+        header("Content-type: " . $file_type);
         header('Content-Disposition: attachment; filename="'. md5($path) .'"');
         header('Expires: 0');
         header('Cache-Control: must-revalidate');
         header('Pragma: public');
         header('Content-Length: ' . filesize(__DIR__ . '/../../' . $namespace . '/' . md5($path)));
         readfile(__DIR__ . '/../../' . $namespace . '/' . md5($path));
-
     }
 } else {
     fetch:
