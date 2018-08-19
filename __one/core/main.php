@@ -48,7 +48,7 @@ if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get(
                 'path' => json_encode($path),
                 'path_md5' => md5($path),
                 'file_type' => mime_content_type(__DIR__ . '/../../' . $namespace . '/' . md5($path)),
-                'file_name' => json_encode(pathinfo(__DIR__ . '/../../' . $namespace . '/' . md5($path))['basename']),
+                'file_name' => json_encode(pathinfo(CONFIG['namespace'][$namespace]['url'] . $path)['basename']),
                 'time' => time(),
             ]);
         }
