@@ -21,11 +21,12 @@ class Storage
 
         $result = curl_exec($ch);
 
-        curl_close($ch);
-
         error_log(curl_getinfo($ch,CURLINFO_HTTP_CODE));
 
         if (curl_getinfo($ch,CURLINFO_HTTP_CODE) != 200) die;
+
+        curl_close($ch);
+
         return $result;
     }
 }
