@@ -12,7 +12,7 @@ class Storage
     {
         error_log($url);
 
-        /*$ch = curl_init();
+        $ch = curl_init();
 
         curl_setopt($ch, CURLOPT_URL, $url);
 
@@ -21,13 +21,7 @@ class Storage
 
         $result = curl_exec($ch);
 
-        error_log(curl_getinfo($ch,CURLINFO_HTTP_CODE));
-
-        if (curl_getinfo($ch,CURLINFO_HTTP_CODE) != 200) die;
-
-        curl_close($ch);*/
-
-        $result = file_get_contents($url);
+        curl_close($ch);
 
         return $result;
     }
