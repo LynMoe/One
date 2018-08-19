@@ -17,7 +17,15 @@ if (!isset($_GET['path']))
 //var_dump(CONFIG);
 
 $namespace = explode('/',$_GET['path'])[1];
-$path = str_replace("/{$namespace}/",'',$_GET['path']) . '?' . $_SERVER["QUERY_STRING"];
+
+if (str_replace('path=' . $_GET['path'],'',$_SERVER["QUERY_STRING"]) == '')
+{
+    $path = str_replace("/{$namespace}/",'',$_GET['path']);
+} else {
+    $path = str_replace("/{$namespace}/",'',$_GET['path']) . '?' . str_replace('path=' . $_GET['path'] . '&','',$_SERVER["QUERY_STRING"]);
+}
+
+
 
 foreach (CONFIG['namespace'] as $key => $value)
 {
