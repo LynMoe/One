@@ -2,6 +2,7 @@
     "require": {
         "izniburak/pdox": "^1.2",
         "ext-json": "^1.6",
-        "ext-fileinfo": "^1.0"
+        "ext-fileinfo": "^1.0",
+        "ext-curl": "^7.2"
     }
 }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0bccb9d33406dd6a744ad5a41ce8aab2",
+    "content-hash": "685a4a8d5728aefa69502493724262d8",
     "packages": [
         {
             "name": "izniburak/pdox",
@@ -61,7 +61,8 @@
     "prefer-lowest": false,
     "platform": {
         "ext-json": "^1.6",
-        "ext-fileinfo": "^1.0"
+        "ext-fileinfo": "^1.0",
+        "ext-curl": "^7.2"
     },
     "platform-dev": []
 }

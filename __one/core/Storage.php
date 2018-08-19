@@ -11,30 +11,21 @@ class Storage
     public static function get_file($url)
     {
         error_log($url);
-        /*$ch = curl_init();
+
+        $ch = curl_init();
 
         curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "GET");
 
-        curl_setopt($ch, CURLOPT_ENCODING, 'deflate');
-
-        $headers = array();
-        $headers[] = "Referer: {$url}";
-        $headers[] = "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36";
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 
         $result = curl_exec($ch);
-        if (curl_errno($ch)) {
-            echo 'Error:' . curl_error($ch);
-        }
-        curl_close ($ch);*/
 
-        $result = file_get_contents($url);
+        curl_close($ch);
 
-        error_log(json_encode($http_response_header));
+        error_log(curl_getinfo($ch,CURLINFO_HTTP_CODE));
 
-        if (!stripos($http_response_header[0],'200')) die;
+        if (curl_getinfo($ch,CURLINFO_HTTP_CODE) != 200) die;
         return $result;
     }
 }
