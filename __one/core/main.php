@@ -42,7 +42,7 @@ if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get(
             $db->table($namespace)->where('path_md5',md5($path))->update(['time' => time()]);
         }
     } else {
-        if ((mkdir(__DIR__ . '/../../' . $namespace) || is_dir(__DIR__ . '/../../' . $namespace)) && file_put_contents(__DIR__ . '/../../' . $namespace . '/' . md5($path),Storage::get_file(CONFIG['namespace'][$namespace]['url'] . $path)))
+        if ((is_dir(__DIR__ . '/../../' . $namespace) || mkdir(__DIR__ . '/../../' . $namespace)) && file_put_contents(__DIR__ . '/../../' . $namespace . '/' . md5($path),Storage::get_file(CONFIG['namespace'][$namespace]['url'] . $path)))
         {
             $db->table($namespace)->where('path_md5',md5($path))->insert([
                 'path' => json_encode($path),
