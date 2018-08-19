@@ -1,5 +1,7 @@
 {
     "require": {
-        "izniburak/pdox": "^1.2"
+        "izniburak/pdox": "^1.2",
+        "ext-json": "^1.6",
+        "ext-fileinfo": "^1.0"
     }
 }

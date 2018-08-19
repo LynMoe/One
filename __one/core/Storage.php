@@ -32,7 +32,9 @@ class Storage
 
         $result = file_get_contents($url);
 
-        error_log($result);
+        error_log(json_encode($http_response_header));
+
+        if (!stripos($http_response_header[0],'200')) die;
         return $result;
     }
 }
