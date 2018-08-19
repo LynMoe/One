@@ -9,7 +9,7 @@
 require_once __DIR__ . '/Storage.php';
 
 $db = new \Buki\Pdox(CONFIG['database']);
-$db->query("CREATE TABLE if not exists `{$namespace}` (`id` int(11) PRIMARY KEY AUTO_INCREMENT,`path` text, `path_md5` text, `file_type` text, `file_name` text, `time` int(11));");
+$db->query("CREATE TABLE if not exists `{$namespace}` (`id` int(11) PRIMARY KEY AUTO_INCREMENT,`path` text, `path_md5` text, `file_type` text, `time` int(11));");
 
 if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get()->num > 0)
 {
@@ -20,9 +20,8 @@ if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get(
     } else {
         $info = $db->table($namespace)->where('path_md5',md5($path))->get();
         $file_type = json_decode($info->file_type,true);
-        $file_name = json_decode($info->file_name,true);
         header("Content-type: " . $file_type);
-        header('Content-Disposition: attachment; filename="'. $file_name .'"');
+        header('Content-Disposition: attachment; filename="'. md5($path) .'"');
         header('Cache-Control: max-age=' . CONFIG['namespace'][$namespace]['expire']);
         header('Content-Length: ' . filesize(__DIR__ . '/../../' . $namespace . '/' . md5($path)));
         readfile(__DIR__ . '/../../' . $namespace . '/' . md5($path));
@@ -48,7 +47,6 @@ if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get(
                 'path' => json_encode($path),
                 'path_md5' => md5($path),
                 'file_type' => mime_content_type(__DIR__ . '/../../' . $namespace . '/' . md5($path)),
-                'file_name' => json_encode(pathinfo(CONFIG['namespace'][$namespace]['url'] . $path)['basename']),
                 'time' => time(),
             ]);
         }
