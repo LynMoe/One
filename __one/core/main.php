@@ -30,9 +30,12 @@ if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get(
     fetch:
 
     header('Location: ' . CONFIG['namespace'][$namespace]['url'] . $path);
+    header('Cache-Control: max-age=0');
     header("Connection: Close");
+    echo 'Moved';
     ob_flush();
     flush();
+    fastcgi_finish_request();
 
     if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get()->num > 0)
     {
