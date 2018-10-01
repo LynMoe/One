@@ -44,7 +44,7 @@ if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get(
         if (file_put_contents(__DIR__ . '/../../' . $namespace . '/' . md5($path),$result['data']))
         {
             $db->table($namespace)->where('path_md5',md5($path))->update([
-                'file_type' => ($result == null) ? (new finfo(FILEINFO_MIME_TYPE))->file(__DIR__ . '/../../' . $namespace . '/' . md5($path)) : $result['type'],
+                'file_type' => ($result['type'] == null) ? (new finfo(FILEINFO_MIME_TYPE))->file(__DIR__ . '/../../' . $namespace . '/' . md5($path)) : $result['type'],
                 'time' => time(),
             ]);
         }
@@ -55,7 +55,7 @@ if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get(
             $db->table($namespace)->where('path_md5',md5($path))->insert([
                 'path' => json_encode($path),
                 'path_md5' => md5($path),
-                'file_type' => ($result == null) ? (new finfo(FILEINFO_MIME_TYPE))->file(__DIR__ . '/../../' . $namespace . '/' . md5($path)) : $result['type'],
+                'file_type' => ($result['type'] == null) ? (new finfo(FILEINFO_MIME_TYPE))->file(__DIR__ . '/../../' . $namespace . '/' . md5($path)) : $result['type'],
                 'time' => time(),
             ]);
         }
