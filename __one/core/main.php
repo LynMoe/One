@@ -21,14 +21,14 @@ if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get(
         $info = $db->table($namespace)->where('path_md5',md5($path))->get();
         $file_type = json_decode($info->file_type,true);
         header("Content-type: " . $file_type);
-        header('Content-Disposition: attachment; filename="'. md5($path) .'"');
+        //header('Content-Disposition: inline');
         header('Cache-Control: max-age=' . CONFIG['namespace'][$namespace]['expire']);
         header('Content-Length: ' . filesize(__DIR__ . '/../../' . $namespace . '/' . md5($path)));
         readfile(__DIR__ . '/../../' . $namespace . '/' . md5($path));
     }
 } else {
     fetch:
-
+    ob_start();
     header('Location: ' . CONFIG['namespace'][$namespace]['url'] . $path);
     header('Cache-Control: max-age=0');
     header("Connection: Close");
@@ -36,20 +36,26 @@ if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get(
     ob_flush();
     flush();
     fastcgi_finish_request();
+    ob_end_flush();
 
     if ($db->table($namespace)->where('path_md5',md5($path))->count('*','num')->get()->num > 0)
     {
-        if (file_put_contents(__DIR__ . '/../../' . $namespace . '/' . md5($path),Storage::get_file(CONFIG['namespace'][$namespace]['url'] . $path)))
+        $result = Storage::get_file(CONFIG['namespace'][$namespace]['url'] . $path);
+        if (file_put_contents(__DIR__ . '/../../' . $namespace . '/' . md5($path),$result['data']))
         {
-            $db->table($namespace)->where('path_md5',md5($path))->update(['time' => time()]);
+            $db->table($namespace)->where('path_md5',md5($path))->update([
+                'file_type' => ($result == null) ? (new finfo(FILEINFO_MIME_TYPE))->file(__DIR__ . '/../../' . $namespace . '/' . md5($path)) : $result['type'],
+                'time' => time(),
+            ]);
         }
     } else {
-        if ((is_dir(__DIR__ . '/../../' . $namespace) || mkdir(__DIR__ . '/../../' . $namespace)) && file_put_contents(__DIR__ . '/../../' . $namespace . '/' . md5($path),Storage::get_file(CONFIG['namespace'][$namespace]['url'] . $path)))
+        $result = Storage::get_file(CONFIG['namespace'][$namespace]['url'] . $path);
+        if ((is_dir(__DIR__ . '/../../' . $namespace) || mkdir(__DIR__ . '/../../' . $namespace)) && file_put_contents(__DIR__ . '/../../' . $namespace . '/' . md5($path),$result['data']))
         {
             $db->table($namespace)->where('path_md5',md5($path))->insert([
                 'path' => json_encode($path),
                 'path_md5' => md5($path),
-                'file_type' => mime_content_type(__DIR__ . '/../../' . $namespace . '/' . md5($path)),
+                'file_type' => ($result == null) ? (new finfo(FILEINFO_MIME_TYPE))->file(__DIR__ . '/../../' . $namespace . '/' . md5($path)) : $result['type'],
                 'time' => time(),
             ]);
         }
