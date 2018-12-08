@@ -23,7 +23,7 @@ class Storage
 
             if ($db->where('path_md5',md5($path))->has($namespace))
             {
-                $result = $db->where('path_md5',md5($path))->get($namespace);
+                $result = $db->where('path_md5',md5($path))->get($namespace)[0];
 
                 if ($result['status'] == 0)
                 {
@@ -58,7 +58,7 @@ class Storage
             ob_end_clean();
 
             $data = $this->get_file(CONFIG['namespace'][$namespace]['url'] . $path);
-            if (file_put_contents(__DIR__ . '/../../' . md5($path),$data['data']))
+            if (file_put_contents(__DIR__ . '/../../' . $namespace . '/' . md5($path),$data['data']))
             {
                 $file_type = ($data['type'] == 'application/octet-stream') ? '' : $data['type'];
 
@@ -74,10 +74,10 @@ class Storage
             $result['time'] = time();
             $result['status'] = 1;
 
-            return $this->output($result,$namespace);
+            die;
         } catch (Exception $exception)
         {
-            return '';
+            error_log($exception->getTraceAsString());
         }
     }
 
