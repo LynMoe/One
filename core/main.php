@@ -8,4 +8,4 @@
 
 require_once __DIR__ . '/Storage.php';
 
-readfile((new Storage())->fetch($namespace,$path));
+readfile(__DIR__ . '/../' . $namespace . '/' . (new Storage())->fetch($namespace,$path));
