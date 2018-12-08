@@ -18,14 +18,14 @@ class Storage
             $db->query("CREATE TABLE if not exists `{$namespace}` 
 (`id` int(11) PRIMARY KEY AUTO_INCREMENT,`path` text, `path_md5` text, `file_type` text,`status` int(11), `time` int(11));");
 
-            if (!is_dir(__DIR__ . '/../' . $namespace))
-                mkdir(__DIR__ . '/../' . $namespace);
+            if (!is_dir(__DIR__ . '/../cache/' . $namespace))
+                mkdir(__DIR__ . '/../cache/' . $namespace);
 
             if ($db->where('path_md5',md5($path))->has($namespace))
             {
                 $result = $db->where('path_md5',md5($path))->get($namespace)[0];
 
-                if ($result['status'] == 0)
+                if ($result['status'] == 0 || (time() - $result['time']) > CONFIG['namespace'][$namespace]['expire'])
                 {
                     $id = $result['id'];
                 } else {
@@ -58,7 +58,7 @@ class Storage
             ob_end_clean();
 
             $data = $this->get_file(CONFIG['namespace'][$namespace]['url'] . $path);
-            if (file_put_contents(__DIR__ . '/../' . $namespace . '/' . md5($path),$data['data']))
+            if (file_put_contents(__DIR__ . '/../cache/' . $namespace . '/' . md5($path),$data['data']))
             {
                 $file_type = ($data['type'] == 'application/octet-stream') ? '' : $data['type'];
 
@@ -86,7 +86,8 @@ class Storage
         if (!empty($data['file_type']))
             header("Content-type: " . $data['file_type']);
         header('Cache-Control: max-age=' . CONFIG['namespace'][$namespace]['expire']);
-        header('Content-Length: ' . filesize(__DIR__ . '/../' . $namespace . '/' . $data['path_md5']));
+        header('Content-Length: ' . filesize(__DIR__ . '/../cache/' . $namespace . '/' . $data['path_md5']));
+        header('Date: ' . date("D, j M Y G:i:s \G\M\T",$data['time']));
 
         return $data['path_md5'];
     }
