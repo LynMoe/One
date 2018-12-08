@@ -67,10 +67,10 @@ class Storage
             flush();
             ob_end_clean();
 
-            $result = $this->get_file(CONFIG['namespace'][$namespace]['url'] . $path);
-            if (file_put_contents(__DIR__ . '/../../' . md5($path),$result['data']))
+            $data = $this->get_file(CONFIG['namespace'][$namespace]['url'] . $path);
+            if (file_put_contents(__DIR__ . '/../../' . md5($path),$data['data']))
             {
-                $file_type = ($result['type'] == 'application/octet-stream') ? '' : $result['type'];
+                $file_type = ($data['type'] == 'application/octet-stream') ? '' : $data['type'];
 
                 $db->where('id',$id)->update($namespace,[
                     'file_type' => $file_type,
