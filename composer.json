@@ -1,0 +1,8 @@
+{
+    "require": {
+        "ext-json": "^1.6",
+        "ext-fileinfo": "^1.0",
+        "ext-curl": "^7.2",
+        "thingengineer/mysqli-database-class": "dev-master"
+    }
+}

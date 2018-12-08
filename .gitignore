@@ -1,6 +1,3 @@
-
 .idea/
-__one/vendor/
-__one/config/.env
-__one/config/.env
-.idea/vcs.xml
+vendor/
+config.php
