@@ -8,16 +8,6 @@
 
 class Storage
 {
-    protected function output($data,$namespace)
-    {
-        if (!empty($data['file_type']))
-            header("Content-type: " . $data['file_type']);
-        header('Cache-Control: max-age=' . CONFIG['namespace'][$namespace]['expire']);
-        header('Content-Length: ' . filesize(__DIR__ . '/../../' . $data['path_md5']));
-
-        return $data['path'];
-    }
-
     public function fetch($namespace,$path)
     {
         $db = new MysqliDb(CONFIG['database']['host'],CONFIG['database']['username'],
@@ -89,6 +79,16 @@ class Storage
         {
             return '';
         }
+    }
+
+    protected function output($data,$namespace)
+    {
+        if (!empty($data['file_type']))
+            header("Content-type: " . $data['file_type']);
+        header('Cache-Control: max-age=' . CONFIG['namespace'][$namespace]['expire']);
+        header('Content-Length: ' . filesize(__DIR__ . '/../../' . $data['path_md5']));
+
+        return $data['path_md5'];
     }
 
     protected function get_file($url)
