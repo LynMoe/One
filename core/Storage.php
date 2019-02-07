@@ -15,8 +15,7 @@ class Storage
 
         try
         {
-            $db->query("CREATE TABLE if not exists `{$namespace}` 
-(`id` int(11) PRIMARY KEY AUTO_INCREMENT,`path` text, `path_md5` text, `file_type` text,`status` int(11), `time` int(11));");
+            $db->query("CREATE TABLE if not exists `{$namespace}` (`id` int(11) PRIMARY KEY AUTO_INCREMENT,`path` text, `path_md5` text, `file_type` text,`status` int(11), `time` int(11));");
 
             if (!is_dir(__DIR__ . '/../cache/' . $namespace))
                 mkdir(__DIR__ . '/../cache/' . $namespace);
@@ -43,19 +42,14 @@ class Storage
             }
 
             ob_end_clean();
-            header("Connection: close\r\n");
-            header("Content-Encoding: none\r\n");
             header('Location: ' . CONFIG['namespace'][$namespace]['url'] . $path);
-            header('Cache-Control: max-age=0');
-            header("Connection: Close");
+            header("Connection: close");
             ignore_user_abort(true);
             ob_start();
-            echo 'Moved';
-            $size = ob_get_length();
-            header("Content-Length: $size");
+            echo('Moved.');
+            header("Content-Length: " . ob_get_length());
             ob_end_flush();
             flush();
-            ob_end_clean();
 
             $data = $this->get_file(CONFIG['namespace'][$namespace]['url'] . $path);
             if (file_put_contents(__DIR__ . '/../cache/' . $namespace . '/' . md5($path),$data['data']))
@@ -67,17 +61,10 @@ class Storage
                     'status' => 1,
                     'time' => time(),
                 ]);
-            } else
-                die;
-
-            $result['file_type'] = $file_type;
-            $result['time'] = time();
-            $result['status'] = 1;
-
-            die;
+            }
         } catch (Exception $exception)
         {
-            error_log($exception->getTraceAsString());
+            \Sentry\captureException($exception);
         }
     }
 
@@ -110,14 +97,14 @@ class Storage
 
         if (curl_exec($ch) === false)
         {
-            error_log('Curl error: ' . curl_error($ch));
+            \Sentry\captureMessage('Curl error: ' . curl_error($ch));
             die;
         }
 
         curl_close($ch);
 
         return [
-            'type' => (is_null($type)) ? 'text/html' : $type,
+            'type' => (is_null($type)) ? 'text/plain' : $type,
             'data' => $result,
         ];
     }

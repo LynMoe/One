@@ -7,6 +7,9 @@
  */
 
 define('CONFIG',[
+    'general' => [
+        'sentryDsn' => 'https://9570f7e1c9404f2b98cb3eed9e6192d8@sentry.io/1389092', // SenTry 平台错误管理，详见README
+    ],
     'namespace' => [
         'google' => [
             'url' => '',

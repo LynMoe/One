@@ -4,10 +4,6 @@
 
 前段时间(大概是暑假的时候)整理博客的时候发现博客静态资源加载速度太慢了，而且也加载了各种来源的资源，于是就萌发了写一个整合静态资源的小程序，因为只会 PHP，所以自然也就用 PHP 来写了 (x
 
-## 项目地址
-
-别找惹就是这里
-
 ## Feature
 
 - 简易的配置文件
@@ -19,7 +15,7 @@
 ## 食用方法
 
 - ```git clone https://github.com/LoliLin/One.git```
-- ```cd One && mv config.example.php config.php```
+- ```cd One && composer install && mv config.example.php config.php```
 - 修改 `config.php` 文件中的数据库信息及静态文件地址
 - Enjoy it!
 
@@ -51,6 +47,11 @@ rewrite  ^/(.*)$ /index.php?path=$uri last;
 所以地址即可替换为: https://static.xx.xx/cdnjs/adc/adc.min.js
 
 ## DEMO
+
+static.xiaolin.in
+
+国内使用腾讯云 CDN，国外使用Azure CDN
+
 访问 小霖的个人页 并单击 F12 查看 Source 选项卡，静态资源全部都是 static.xiaolin.in 是吧 (x
 
 ## Tips
@@ -60,3 +61,4 @@ rewrite  ^/(.*)$ /index.php?path=$uri last;
 - 小心你的服务器磁盘
 - 不要用部署在国内的服务器本程序去缓存 404 网站的内容 (
 - 小心 Bug (((
+- 加入了 SenTry 平台的错误汇报模块，默认回报地址为作者账户，若担心隐私泄露可将配置中的 `sentryDns` 更改为自己的或留空
