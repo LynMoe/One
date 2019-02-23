@@ -10,7 +10,7 @@
 - 轻量级的代码
 - 高效的缓存机制
 - 各种各样奇怪的Bug (x
-- (编不出来惹 (还是那句老话
+- (编不出来惹
 
 ## 食用方法
 
@@ -36,9 +36,18 @@ rewrite  ^/(.*)$ /index.php?path=$uri last;
 > 用 JSON 写只是做个示范
 ```json
 {
-    "cdnjs":{
+    "cdnjs": {
         "url":"https://cdnjs.com/",
-        "expire":3600
+        "expire":3600,
+        "header": [
+            "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36"
+        ],
+        "proxy": {
+            "use": true,
+            "host": "127.0.0.1:8080",
+            "auth": "username:password",
+            "type": CURLPROXY_SOCKS5
+        }
     }
 }
 ```
@@ -61,4 +70,4 @@ static.xiaolin.in
 - 小心你的服务器磁盘
 - 不要用部署在国内的服务器本程序去缓存 404 网站的内容 (
 - 小心 Bug (((
-- 加入了 SenTry 平台的错误汇报模块，默认回报地址为作者账户，若担心隐私泄露可将配置中的 `sentryDns` 更改为自己的或留空
+- 加入了 SenTry 平台的错误汇报模块，默认回报地址为小霖账户，若担心隐私泄露可将配置中的 `sentryDns` 更改为自己的或留空
