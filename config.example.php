@@ -14,6 +14,13 @@ define('CONFIG',[
         'google' => [
             'url' => '',
             'expire' => 3600 * 24,
+            'header' => [],
+            'proxy' => [
+                'use' => false,
+                'host' => '',
+                'auth' => 'username:password',
+                'type' => CURLPROXY_SOCKS5,
+            ],
         ],
     ],
     'database' => [

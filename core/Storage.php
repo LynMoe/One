@@ -42,16 +42,25 @@ class Storage
             }
 
             ob_end_clean();
+            ob_start();
             header('Location: ' . CONFIG['namespace'][$namespace]['url'] . $path);
             header("Connection: close");
-            ignore_user_abort(true);
-            ob_start();
             echo('Moved.');
             header("Content-Length: " . ob_get_length());
             ob_end_flush();
             flush();
+            fastcgi_finish_request();
 
-            $data = $this->get_file(CONFIG['namespace'][$namespace]['url'] . $path);
+            $data = $this->
+            get_file(
+                CONFIG['namespace'][$namespace]['url'] . $path,
+                (empty(CONFIG['namespace'][$namespace]['header'])) ? [
+                    'Referer: ' . CONFIG['namespace'][$namespace]['url'] . $path,
+                    'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
+                ] : CONFIG['namespace'][$namespace]['header'],
+                (empty(CONFIG['namespace'][$namespace]['proxy'])) ? ['use' => false,] : CONFIG['namespace'][$namespace]['proxy']
+            );
+
             if (file_put_contents(__DIR__ . '/../cache/' . $namespace . '/' . md5($path),$data['data']))
             {
                 $file_type = ($data['type'] == 'application/octet-stream') ? '' : $data['type'];
@@ -79,18 +88,21 @@ class Storage
         return $data['path_md5'];
     }
 
-    protected function get_file($url)
+    protected function get_file($url,$header = [],$proxy = ['use' => false,])
     {
         $ch = curl_init();
 
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            'Referer: ' . $url,
-            'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
-        ));
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+
+        if ($proxy['use'])
+        {
+            curl_setopt($ch, CURLOPT_PROXY, $proxy['host']);
+            curl_setopt($ch, CURLOPT_PROXYUSERPWD, $proxy['auth']);
+            curl_setopt($ch, CURLOPT_PROXYTYPE, $proxy['type']);
+        }
 
         $result = curl_exec($ch);
         $type = curl_getinfo($ch,CURLINFO_CONTENT_TYPE);
@@ -98,6 +110,14 @@ class Storage
         if (curl_exec($ch) === false)
         {
             \Sentry\captureMessage('Curl error: ' . curl_error($ch));
+            die;
+        }
+
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if ($httpcode < 200 && $httpcode >= 300)
+        {
+            \Sentry\captureMessage('404 error.');
             die;
         }
 
