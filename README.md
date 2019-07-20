@@ -44,9 +44,9 @@ rewrite  ^/(.*)$ /index.php?path=$uri last;
         ],
         "proxy": {
             "use": true,
-            "host": "127.0.0.1:8080",
+            "host": "http://127.0.0.1:8080",
             "auth": "username:password",
-            "type": CURLPROXY_SOCKS5
+            "type": CURLPROXY_HTTP
         }
     }
 }

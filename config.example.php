@@ -17,7 +17,7 @@ define('CONFIG',[
             'header' => [],
             'proxy' => [
                 'use' => false,
-                'host' => '',
+                'host' => 'tcp://',
                 'auth' => 'username:password',
                 'type' => CURLPROXY_SOCKS5,
             ],

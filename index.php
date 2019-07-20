@@ -33,9 +33,15 @@ foreach (CONFIG['namespace'] as $key => $value)
 {
     if ($namespace == $key)
     {
+        set_time_limit(60);
         require_once __DIR__ . '/core/Storage.php';
 
-        readfile(__DIR__ . '/cache/' . $namespace . '/' . (new Storage())->fetch($namespace,$path));
+        $filepath = __DIR__ . '/cache/' . $namespace . '/' . (new Storage())->fetch($namespace,$path);
+
+        if (!$filepath)
+            die;
+
+        readfile($filepath);
         die;
     }
 }

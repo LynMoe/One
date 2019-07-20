@@ -41,15 +41,16 @@ class Storage
                 ]);
             }
 
-            ob_end_clean();
-            ob_start();
+            $str = ob_get_contents() . 'Moved';
             header('Location: ' . CONFIG['namespace'][$namespace]['url'] . $path);
-            header("Connection: close");
-            echo('Moved.');
-            header("Content-Length: " . ob_get_length());
-            ob_end_flush();
+            header('Content-Length: '. strlen($str) - 1);
+            header('Connection: Close');
+            ob_start();
+            echo $str;
+            ob_flush();
             flush();
             fastcgi_finish_request();
+            ignore_user_abort(true);
 
             $data = $this->
             get_file(
@@ -96,6 +97,7 @@ class Storage
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        curl_setopt($ch,CURLOPT_TIMEOUT,40);
 
         if ($proxy['use'])
         {
