@@ -89,6 +89,8 @@ class Storage
                         $filetype = 'image/webp';
                     } catch (Exception $exception)
                     {
+                        file_put_contents($filename,$data['data']);
+                        $filetype = ($data['type'] == 'application/octet-stream') ? '' : $data['type'];
                         \Sentry\captureException($exception);
                     }
                 }
