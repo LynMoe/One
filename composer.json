@@ -5,6 +5,7 @@
         "thingengineer/mysqli-database-class": "dev-master",
         "sentry/sentry": "2.0.0-beta1",
         "php-http/curl-client": "^1.7",
-        "guzzlehttp/psr7": "^1.5"
+        "guzzlehttp/psr7": "^1.5",
+        "cloudconvert/cloudconvert-php": "2.2.*"
     }
 }

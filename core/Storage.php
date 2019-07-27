@@ -6,6 +6,8 @@
  * Time: 7:27 PM
  */
 
+use \CloudConvert\Api;
+
 class Storage
 {
     public function fetch($namespace,$path)
@@ -52,9 +54,11 @@ class Storage
             fastcgi_finish_request();
             ignore_user_abort(true);
 
+            $fileurl = CONFIG['namespace'][$namespace]['url'] . $path;
+
             $data = $this->
             get_file(
-                CONFIG['namespace'][$namespace]['url'] . $path,
+                $fileurl,
                 (empty(CONFIG['namespace'][$namespace]['header'])) ? [
                     'Referer: ' . CONFIG['namespace'][$namespace]['url'] . $path,
                     'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36'
@@ -62,12 +66,35 @@ class Storage
                 (empty(CONFIG['namespace'][$namespace]['proxy'])) ? ['use' => false,] : CONFIG['namespace'][$namespace]['proxy']
             );
 
-            if (file_put_contents(__DIR__ . '/../cache/' . $namespace . '/' . md5($path),$data['data']))
+            $filename = __DIR__ . '/../cache/' . $namespace . '/' . md5($path);
+
+            if (file_put_contents($filename,$data['data']))
             {
-                $file_type = ($data['type'] == 'application/octet-stream') ? '' : $data['type'];
+                $filetype = ($data['type'] == 'application/octet-stream') ? '' : $data['type'];
+
+                if (isset(CONFIG['general']['useCloudConvert']) && CONFIG['general']['useCloudConvert'] && in_array($filetype,['image/jpg','image/png','image/jpeg',]))
+                {
+                    try
+                    {
+                        $api = new Api(CONFIG['general']['cloudConvertKey']);
+
+                        $api->convert([
+                            'inputformat' => (stripos('jpeg',$filetype)) ? 'jpeg' : ((stripos('jpg',$filetype)) ? 'jpg' : 'png'),
+                            'outputformat' => 'webp',
+                            'input' => 'download',
+                            'file' => $fileurl,
+                        ])
+                            ->wait()
+                            ->download($filename);
+                        $filetype = 'image/webp';
+                    } catch (Exception $exception)
+                    {
+                        \Sentry\captureException($exception);
+                    }
+                }
 
                 $db->where('id',$id)->update($namespace,[
-                    'file_type' => $file_type,
+                    'file_type' => $filetype,
                     'status' => 1,
                     'time' => time(),
                 ]);
