@@ -1,0 +1,33 @@
+{
+  "name": "one",
+  "version": "1.0.0",
+  "description": "one",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LoliLin/One.git"
+  },
+  "keywords": [
+    "static"
+  ],
+  "author": "XiaoLin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/LoliLin/One/issues"
+  },
+  "homepage": "https://github.com/LoliLin/One#readme",
+  "dependencies": {
+    "clean-css": "^4.2.1",
+    "file-type": "^12.1.0",
+    "fs": "0.0.1-security",
+    "http": "0.0.0",
+    "request": "^2.88.0",
+    "rimraf": "^2.7.0",
+    "sharp": "^0.23.0",
+    "url": "^0.11.0",
+    "zlib": "^1.0.5"
+  }
+}
