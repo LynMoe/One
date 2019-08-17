@@ -27,7 +27,7 @@ async function handler(req, res) {
     let DIR = __dirname + '/';
     let filedata, filehash, fileinfo, filemetadata, fileurl, pathname, namespace, settings;
 
-    console.log('JavaScript HTTP trigger function processed a request.');
+    // console.log('JavaScript HTTP trigger function processed a request.');
 
     if (!fs.existsSync(DIR + 'Cache'))
         fs.mkdirSync(DIR + 'Cache');
@@ -38,7 +38,7 @@ async function handler(req, res) {
             pathname = url.parse(pathname).pathname + url.parse(pathname).search;
         else
             pathname = url.parse(pathname).pathname;
-        console.log('Pathname: ' + pathname);
+        // console.log('Pathname: ' + pathname);
 
         namespace = pathname.split('/', 2);
         if (namespace)
@@ -47,13 +47,13 @@ async function handler(req, res) {
         pathname = pathname.substr(namespace.length + 2);
 
         if (fs.existsSync(DIR = DIR + namespace + '/') && namespace && fs.existsSync(DIR + 'settings.json')) {
-            console.log('Namespace exist.');
+            // console.log('Namespace exist.');
             settings = JSON.parse(fs.readFileSync(DIR + 'settings.json'));
-            console.log(settings);
-            console.log('File name: ' + pathname);
+            // console.log(settings);
+            // console.log('File name: ' + pathname);
 
             filehash = pathname.hashCode();
-            console.log('File path hash: ' + filehash);
+            // console.log('File path hash: ' + filehash);
 
             if (!fs.existsSync(DIR = DIR + 'data/'))
                 fs.mkdirSync(DIR);
@@ -61,7 +61,7 @@ async function handler(req, res) {
             DIR = DIR + filehash + '/';
 
             fileurl = settings.host + pathname;
-            console.log('File url: ' + fileurl);
+            // console.log('File url: ' + fileurl);
 
             if (fs.existsSync(DIR) && fs.existsSync(DIR + 'info.json') &&
                 fs.statSync(DIR + 'file.data').mtime.getTime() > (Date.now() - settings.expireTime) &&
@@ -69,7 +69,7 @@ async function handler(req, res) {
                 fileinfo = JSON.parse(fs.readFileSync(DIR + 'info.json'));
 
                 sent = true;
-                console.log('File type:' + fileinfo.type);
+                // console.log('File type:' + fileinfo.type);
 
                 res.setHeader('Content-Type', fileinfo.type);
                 res.setHeader('Cache-Control', `max-age=${settings.expireTime / 1000}`);
@@ -123,9 +123,9 @@ async function handler(req, res) {
                         },
                         timeout: 10000
                     }, async (error, response, body) => {
-                        //console.log(error,response,body);
+                        // console.log(error,response,body);
                         if (error) {
-                            console.log(error.toString());
+                            // console.log(error.toString());
                             rimraf.sync(DIR);
                             res.writeHead(500);
                             res.end();
@@ -136,7 +136,7 @@ async function handler(req, res) {
                         if (!(fileType(body) && (filemetadata = fileType(body).mime)))
                             filemetadata = response.headers['content-type'];
 
-                        console.log(filemetadata);
+                        // console.log(filemetadata);
 
                         if (['image/png', 'image/jpg', 'image/jpeg'].includes(filemetadata)) {
                             try {
@@ -146,7 +146,7 @@ async function handler(req, res) {
 
                                 filemetadata = 'image/webp';
                             } catch (e) {
-                                console.log(e);
+                                // console.log(e);
                                 rimraf.sync(DIR);
                                 reject();
                                 return;
@@ -156,7 +156,7 @@ async function handler(req, res) {
                         if (filemetadata.indexOf('text/css') !== -1) {
                             let data = new cleanCss({}).minify(body.toString());
                             if (data.errors.length !== 0) {
-                                console.log(data.errors);
+                                // console.log(data.errors);
                             } else 
                                 body = Buffer.from(data.styles);
                         }
@@ -166,7 +166,7 @@ async function handler(req, res) {
                             'size': body.length,
                             'time': Date.now(),
                         };
-                        console.log(`[${response.statusCode}] ${filemetadata}`);
+                        // console.log(`[${response.statusCode}] ${filemetadata}`);
 
                         fs.writeFileSync(DIR + 'file.data', body, 'binary');
                         fs.writeFileSync(DIR + 'file.gz.data', zlib.gzipSync(body, {
