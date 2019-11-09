@@ -50,6 +50,10 @@ async function handler(req, res) {
             fileurl = settings.host + pathname;
             // console.log("File url: " + fileurl);
 
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Access-Control-Expose-Headers", "*");
+            res.setHeader("X-Powered-By", "One");
+
             if (fs.existsSync(DIR) && fs.existsSync(DIR + "info.json") &&
                 fs.statSync(DIR + "file.data").mtime.getTime() > (Date.now() - settings.expireTime) &&
                 fs.existsSync(DIR + "file.br.data")) {
@@ -60,10 +64,8 @@ async function handler(req, res) {
 
                 res.setHeader("Content-Type", fileinfo.type);
                 res.setHeader("Cache-Control", `max-age=${settings.expireTime / 1000}`);
-                res.setHeader("Access-Control-Allow-Origin", "*");
 
                 res.setHeader("Vary", "Accept-Encoding");
-                res.setHeader("X-Powered-By", "One");
 
                 let acceptEncoding = req.headers["accept-encoding"];
                 if (!acceptEncoding) {
