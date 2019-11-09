@@ -1,4 +1,4 @@
 {
     "host": "https://xiaolin.in/",
-    "expireTime": 0
+    "expireTime": 300000
 }
