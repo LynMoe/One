@@ -21,6 +21,7 @@
   "homepage": "https://github.com/LoliLin/One#readme",
   "dependencies": {
     "clean-css": "^4.2.1",
+    "crypto-js": "^3.1.9-1",
     "file-type": "^12.1.0",
     "fs": "0.0.1-security",
     "http": "0.0.0",

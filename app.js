@@ -7,18 +7,7 @@ const http = require("http");
 const sharp = require("sharp");
 const cleanCss = require("clean-css");
 const zlib = require("zlib");
-
-const hashCode = function () {
-    var hash = 0,
-        i, chr;
-    if (this.length === 0) return hash;
-    for (i = 0; i < this.length; i++) {
-        chr = this.charCodeAt(i);
-        hash = ((hash << 5) - hash) + chr;
-        hash |= 0;
-    }
-    return hash;
-};
+const SHA256 = require("crypto-js/sha256");
 
 async function handler(req, res) {
     process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = 0;
@@ -50,7 +39,7 @@ async function handler(req, res) {
             // console.log(settings);
             // console.log("File name: " + pathname);
 
-            filehash = hashCode(pathname);
+            filehash = SHA256(pathname);
             // console.log("File path hash: " + filehash);
 
             if (!fs.existsSync(DIR = DIR + "data/"))
