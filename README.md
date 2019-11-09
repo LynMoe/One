@@ -36,13 +36,25 @@
 
 程序默认监听 `3000` 端口，需要更改可直接在程序中更改
 
+## Docker
+
+咕了一百年终于有空把凄惨 `Dockerfile` 给写了
+
+运行方法很简单，`git clone` 之后在根目录输入 `sudo docker build -t one:v0.1 .` 就完成了镜像的部署
+
+向外暴露的端口是 `3000`，`docker run` 的时候记得开放端口和目录
+
+示例代码: `sudo docker run -d -p 3000:3000 -v /path/to/One/Cache:/home/One/Cache one:v0.1`
+
 ## DEMO
 
-getxiaol.in
+static.xiaolin.in
 
-~~国内使用腾讯云 CDN，国外使用Azure CDN~~ 因为嫖了个域名没备案所以就裸机扔在了 rixCloud 的 HK 服务器上
+~~getxiaol.in~~
 
-访问 小霖的个人页 并单击 F12 查看 Source 选项卡，静态资源全部都是 getxiaol.in 是吧 (x
+~~国内使用腾讯云 CDN，国外使用Azure CDN 因为嫖了个域名没备案所以就裸机扔在了 rixCloud 的 HK 服务器上~~ rixCloue 的服务器又双叒叕炸了，只好搞了下扔到了腾讯云上
+
+访问 小霖的个人页 并单击 F12 查看 Source 选项卡，静态资源全部都是 static.xiaolin.in 是吧 (x
 
 ## Tips
 
