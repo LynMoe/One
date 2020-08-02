@@ -1,6 +1,8 @@
+const ERR_NO_SETTING_FOUND = Symbol('ERR_NO_SETTING_FOUND');
+
 const fs = require('fs')
 const { access, mkdir, readFile, stat, writeFile } = fs.promises
-const path = require('path')
+const { resolve } = require('path')
 const request = require('request')
 const fileType = require('file-type')
 const rimraf = require('rimraf')
@@ -9,10 +11,11 @@ const sharp = require('sharp')
 const CleanCss = require('clean-css')
 const zlib = require('zlib')
 const SHA256 = require('crypto-js/sha256')
+const Promise = require('bluebird');
 
 const processingList = {}
 
-function exists (path) {
+function exists(path) {
   const promise = access(path).then(() => true, err => {
     if (err.code !== 'ENOENT') throw err
     return false
@@ -21,23 +24,15 @@ function exists (path) {
   return Promise.resolve(promise)
 }
 
-async function existsAndStat (filename) {
-  try {
-    return await stat(filename)
-  } catch (error) {
-    return false
-  }
+function existsAndStat(filename) {
+  return Promise.resolve(stat(filename)).catch(() => false);
 }
 
-async function existsAndRead (filename) {
-  try {
-    return await readFile(filename)
-  } catch (error) {
-    return false
-  }
+async function existsAndRead(filename) {
+  return Promise.resolve(readFile(filename)).catch(() => null);
 }
 
-async function handler (req, res) {
+function handler(req, res) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0
   let filehash, fileinfo, filemetadata, fileurl, pathname, namespace, settings
 
@@ -54,68 +49,77 @@ async function handler (req, res) {
 
     let DIR = path.resolve(__dirname, 'Cache/', namespace)
 
-    settings = await existsAndRead(path.resolve(DIR, 'settings.json'))
+    return existsAndRead(path.resolve(DIR, 'settings.json'))
+      .then(settings => {
+        if (settings !== null) {
+          settings = JSON.parse(settings)
 
-    if (settings !== false) {
-      settings = JSON.parse(settings)
+          filehash = SHA256(pathname).toString()
 
-      filehash = SHA256(pathname).toString()
+          DIR = resolve(DIR, 'data/', filehash)
 
-      DIR = path.resolve(DIR, 'data/', filehash)
+          fileurl = settings.host + pathname
 
-      fileurl = settings.host + pathname
+          res.setHeader('Access-Control-Allow-Origin', '*')
+          res.setHeader('Access-Control-Expose-Headers', '*')
+          res.setHeader('X-Powered-By', 'One')
 
-      res.setHeader('Access-Control-Allow-Origin', '*')
-      res.setHeader('Access-Control-Expose-Headers', '*')
-      res.setHeader('X-Powered-By', 'One')
-
-      const filestat = await existsAndStat(path.resolve(DIR, 'file.br.data'))
-      if (!processingList[DIR] && filestat && filestat.mtime.getTime() > (Date.now() - settings.expireTime)) {
-        fileinfo = JSON.parse(await readFile(path.resolve(DIR, 'info.json')))
-
-        res.setHeader('Content-Type', fileinfo.type)
-        res.setHeader('Cache-Control', `max-age=${settings.expireTime / 1000}`)
-        res.setHeader('Vary', 'Accept-Encoding')
-
-        let acceptEncoding = req.headers['accept-encoding']
-        if (!acceptEncoding) {
-          acceptEncoding = ''
-        }
-
-        if (/\bbr\b/.test(acceptEncoding)) {
-          res.setHeader('Content-Encoding', 'br')
-          res.end(await readFile(path.resolve(DIR, 'file.br.data'), {
-            encoding: null
-          }))
-        } else if (/\bgzip\b/.test(acceptEncoding)) {
-          res.setHeader('Content-Encoding', 'gzip')
-          res.end(await readFile(path.resolve(DIR, 'file.gz.data'), {
-            encoding: null
-          }))
+          return existsAndStat(path.resolve(DIR, 'file.br.data'))
         } else {
-          res.setHeader('Content-Encoding', 'deflate')
-          res.end(await readFile(path.resolve(DIR, 'file.data'), {
-            encoding: null
-          }))
+          throw new Error(ERR_NO_SETTING_FOUND);
         }
-      } else {
-        res.writeHead(302, {
-          Location: fileurl
-        })
+      })
+      .then(filestat => {
+        if (!processingList[DIR] && filestat && filestat.mtime.getTime() > (Date.now() - settings.expireTime)) {
+          return readFile(resolve(DIR, 'info.json'))
+            .then(fileinfo => {
+              res.setHeader('Content-Type', fileinfo.type)
+              res.setHeader('Cache-Control', `max-age=${settings.expireTime / 1000}`)
+              res.setHeader('Vary', 'Accept-Encoding')
 
-        res.end()
+              let acceptEncoding = req.headers['accept-encoding']
+              if (!acceptEncoding) {
+                acceptEncoding = ''
+              }
 
-        if (processingList[DIR]) return
-        processingList[DIR] = true
+              if (/\bbr\b/.test(acceptEncoding)) {
+                return readFile(resolve(DIR, 'file.br.data'), {
+                  encoding: null
+                }).then(data => {
+                  res.setHeader('Content-Encoding', 'br')
+                  res.end(data);
+                })
+              } else if (/\bgzip\b/.test(acceptEncoding)) {
+                return readFile(resolve(DIR, 'file.gz.data'), {
+                  encoding: null
+                }).then(data => {
+                  res.setHeader('Content-Encoding', 'gzip')
+                  res.end(data)
+                })
+              } else {
+                return readFile(resolve(DIR, 'file.data'), {
+                  encoding: null
+                }).then(data => {
+                  res.setHeader('Content-Encoding', 'deflate')
+                  res.end(data)
+                })
+              }
+            });
+        } else {
+          res.writeHead(302, {
+            Location: fileurl
+          });
 
-        if (!await exists(DIR)) {
-          await mkdir(DIR, {
-            recursive: true
-          })
-        }
+          res.end()
 
-        return new Promise((resolve, reject) => {
-          request.get({
+          if (processingList[DIR]) return;
+          processingList[DIR] = true
+
+          return exists(DIR).then(exist => {
+            if (!exist) return mkdir(DIR, {
+              recursive: true
+            });
+          }).then(() => Promise.fromCallback(cb => request.get({
             url: fileurl,
             encoding: null,
             headers: {
@@ -123,57 +127,58 @@ async function handler (req, res) {
               'cache-control': 'max-age=0'
             },
             timeout: 10000
-          }, async (error, response, body) => {
-            if (error) {
-              rimraf.sync(DIR)
-              reject(new Error(error))
-              return
-            }
-
+          }, cb), {
+            multiArgs: true
+          }).catch(e => {
+            rimraf.sync(DIR);
+            throw new e
+          })).spread((response, body) => {
             if (!(fileType(body) && (filemetadata = fileType(body).mime))) { filemetadata = response.headers['content-type'] }
 
             if (['image/png', 'image/jpg', 'image/jpeg'].includes(filemetadata)) {
-              try {
-                body = await sharp(body)
-                  .webp()
-                  .toBuffer()
-
-                filemetadata = 'image/webp'
-              } catch (e) {
+              return sharp(body).webp().toBuffer().then(body => {
+                filemetadata = 'image/webp';
+                return body
+              }).catch(e => {
                 rimraf.sync(DIR)
-                reject(new Error(e))
-                return
-              }
+                throw new Error(e)
+              });
             }
 
             if (filemetadata.indexOf('text/css') !== -1) {
               const data = new CleanCss({}).minify(body.toString())
               if (data.errors.length !== 0) {
               } else { body = Buffer.from(data.styles) }
-            }
 
+              return body;
+            }
+          }).then(body => {
             filemetadata = {
               type: filemetadata,
               size: body.length,
               time: Date.now()
             }
 
-            await writeFile(path.resolve(DIR, 'file.data'), body, 'binary')
-            await writeFile(path.resolve(DIR, 'file.gz.data'), zlib.gzipSync(body, {
-              level: 9
-            }), 'binary')
-            await writeFile(path.resolve(DIR, 'file.br.data'), zlib.brotliCompressSync(body), 'binary')
-            await writeFile(path.resolve(DIR, 'info.json'), JSON.stringify(filemetadata), 'utf8')
+            return Promise.all([
+              writeFile(resolve(DIR, 'file.data'), body, 'binary'),
+              writeFile(resolve(DIR, 'file.data'), body, 'binary'),
+              writeFile(path.resolve(DIR, 'file.gz.data'), zlib.gzipSync(body, {
+                level: 9
+              }), 'binary')
+            ])
+          }).then(() => {
             delete processingList[DIR]
-
-            resolve()
           })
-        })
-      }
-    } else {
-      res.writeHead(404)
-      res.end()
-    }
+        }
+      })
+      .catch(e => {
+        if (e.message === ERR_NO_SETTING_FOUND) {
+          res.writeHead(404)
+          res.end()
+        } else {
+          throw new e
+        }
+      });
   }
 }
 
