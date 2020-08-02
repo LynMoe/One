@@ -6,22 +6,23 @@ const {
   statAsync: stat,
   writeFileAsync: writeFile
 } = Promise.promisifyAll(require('fs'))
-const path = require('path')
-const request = require('request')
-const fileType = require('file-type')
-const rimraf = require('rimraf')
-const http = require('http')
-const sharp = require('sharp')
-const CleanCss = require('clean-css')
-const zlib = require('zlib')
-const sha256 = require('crypto-js/sha256')
-const os = require('os')
 const cluster = require('cluster')
+const hash = require('crypto').createHash
+const os = require('os')
+
+const request = cluster.isMaster && require('request')
+const fileType = cluster.isMaster && require('file-type')
+const rimraf = cluster.isMaster && require('rimraf')
+const sharp = cluster.isMaster && require('sharp')
+const CleanCSS = cluster.isMaster && require('clean-css')
+const zlib = cluster.isMaster && require('zlib')
+
+function md5 (string) {
+  return hash('md5').update(string).digest('hex')
+}
 
 const processingList = {}
 const settingList = {}
-
-let isWorker = false
 
 function exists (path) {
   const promise = access(path).then(() => true, err => {
@@ -92,7 +93,7 @@ async function fetchFile (DIR, filehash, fileurl) {
       }
 
       if (filemetadata.indexOf('text/css') !== -1) {
-        const data = new CleanCss({}).minify(body.toString())
+        const data = new CleanCSS({}).minify(body.toString())
         if (data.errors.length !== 0) {
         } else { body = Buffer.from(data.styles) }
       }
@@ -103,12 +104,12 @@ async function fetchFile (DIR, filehash, fileurl) {
         time: Date.now()
       }
 
-      await writeFile(path.resolve(DIR, 'file.data'), body, 'binary')
-      await writeFile(path.resolve(DIR, 'file.gz.data'), zlib.gzipSync(body, {
+      await writeFile(DIR + 'file.data', body, 'binary')
+      await writeFile(DIR + 'file.gzip.data', zlib.gzipSync(body, {
         level: 9
       }), 'binary')
-      await writeFile(path.resolve(DIR, 'file.br.data'), zlib.brotliCompressSync(body), 'binary')
-      await writeFile(path.resolve(DIR, 'info.json'), JSON.stringify(filemetadata), 'utf8')
+      await writeFile(DIR + 'file.br.data', zlib.brotliCompressSync(body), 'binary')
+      await writeFile(DIR + 'info.json', JSON.stringify(filemetadata), 'utf8')
       delete processingList[filehash]
 
       resolve()
@@ -118,7 +119,7 @@ async function fetchFile (DIR, filehash, fileurl) {
 
 async function handler (req, res) {
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0
-  let filehash, fileinfo, fileurl, pathname, namespace
+  let filehash, fileinfo, pathname, namespace
 
   pathname = req.url
 
@@ -127,12 +128,12 @@ async function handler (req, res) {
 
   pathname = pathname.substr(namespace.length + 2)
 
-  let DIR = path.resolve(__dirname, 'Cache/', namespace)
+  let DIR = `${__dirname}/Cache/${namespace}/`
 
   let settings
   {
-    const settingPath = path.resolve(DIR, 'settings.json')
-    const settingHash = sha256(settingPath)
+    const settingPath = DIR + 'settings.json'
+    const settingHash = md5(settingPath)
 
     settings = settingList[settingHash] || (settingList[settingHash] = await existsAndRead(settingPath))
   }
@@ -140,27 +141,20 @@ async function handler (req, res) {
   if (settings !== false) {
     settings = JSON.parse(settings)
 
-    filehash = sha256(pathname).toString()
+    filehash = md5(pathname)
 
-    DIR = path.resolve(DIR, 'data/', filehash)
+    DIR += 'data/' + filehash + '/'
 
-    fileurl = settings.host + pathname
-
-    const filestat = await existsAndStat(path.resolve(DIR, 'info.json'))
+    const filestat = await existsAndStat(DIR + 'info.json')
     if (!processingList[filehash] && filestat && filestat.mtime.getTime() > (Date.now() - settings.expireTime)) {
       try {
-        fileinfo = JSON.parse(await readFile(path.resolve(DIR, 'info.json')))
+        fileinfo = JSON.parse(await readFile(DIR + 'info.json'))
       } catch (error) {
         fileinfo = false
       }
     } else fileinfo = false
 
     if (fileinfo !== false) {
-      // res.setHeader('Content-Type', fileinfo.type)
-      // res.setHeader('Cache-Control', `max-age=${settings.expireTime / 1000}`)
-      // res.setHeader('Vary', 'Accept-Encoding')
-      // res.setHeader('X-Powered-By', 'One')
-
       let acceptEncoding = req.headers['accept-encoding']
       if (!acceptEncoding) {
         acceptEncoding = ''
@@ -168,22 +162,10 @@ async function handler (req, res) {
 
       if (/\bbr\b/.test(acceptEncoding)) {
         acceptEncoding = 'br'
-        // res.setHeader('Content-Encoding', 'br')
-        // res.end(await readFile(path.resolve(DIR, 'file.br.data'), {
-        //   encoding: null
-        // }))
       } else if (/\bgzip\b/.test(acceptEncoding)) {
         acceptEncoding = 'gzip'
-        // res.setHeader('Content-Encoding', 'gzip')
-        // res.end(await readFile(path.resolve(DIR, 'file.gz.data'), {
-        //   encoding: null
-        // }))
       } else {
         acceptEncoding = 'deflate'
-        // res.setHeader('Content-Encoding', 'deflate')
-        // res.end(await readFile(path.resolve(DIR, 'file.data'), {
-        //   encoding: null
-        // }))
       }
 
       res.writeHead(200, {
@@ -196,16 +178,18 @@ async function handler (req, res) {
       if (acceptEncoding !== 'deflate') acceptEncoding += '.'
       else acceptEncoding = ''
 
-      res.end(await readFile(path.resolve(DIR, `file.${acceptEncoding}data`), {
+      res.end(await readFile(DIR + `file.${acceptEncoding}data`, {
         encoding: null
       }))
     } else {
+      const fileurl = settings.host + pathname
+
       res.writeHead(302, {
         Location: fileurl
       })
       res.end()
 
-      if (isWorker) {
+      if (cluster.isWorker) {
         process.send({
           type: 'fetch',
           data: [DIR, filehash, fileurl]
@@ -221,13 +205,24 @@ async function handler (req, res) {
 }
 
 const clusterWorkerSize = os.cpus().length
+const http = require('http')
+
+function createServer () {
+  http.createServer(handler).listen(3000)
+}
 
 if (clusterWorkerSize > 1) {
   if (cluster.isMaster) {
     for (let i = 0; i < clusterWorkerSize; i++) {
       const worker = cluster.fork()
       worker.on('message', (msg = {}) => {
-        if (msg.type === 'fetch') fetchFile(...msg.data)
+        if (msg.type === 'fetch') {
+          try {
+            fetchFile(...msg.data)
+          } catch (error) {
+            delete processingList[msg.data[1]]
+          }
+        }
       })
     }
 
@@ -235,14 +230,12 @@ if (clusterWorkerSize > 1) {
       console.log('Worker', worker.id, ' has exitted.')
     })
   } else {
-    isWorker = true
-
-    http.createServer(handler).listen(3000)
+    createServer()
 
     console.log(`HTTP server listening on port 3000, pid ${process.pid}`)
   }
 } else {
-  http.createServer(handler).listen(3000)
+  createServer()
 
   console.log(`HTTP server listening on port 3000 with the single worker, pid ${process.pid}`)
 }
