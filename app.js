@@ -1,4 +1,5 @@
 const fs = require("fs");
+const { exists, mkdir, readFile, stat, writeFile, unlink } = fs.promises;
 const url = require("url");
 const request = require("request");
 const fileType = require("file-type");
@@ -16,15 +17,18 @@ async function handler(req, res) {
 
     // console.log("JavaScript HTTP trigger function processed a request.");
 
-    if (!fs.existsSync(DIR + "Cache"))
-        fs.mkdirSync(DIR + "Cache");
+    if (!await exists(DIR + "Cache"))
+        await mkdir(DIR + "Cache");
     DIR = DIR + "Cache/";
 
     if (pathname = req.url) {
-        if (url.parse(pathname).search)
-            pathname = url.parse(pathname).pathname + url.parse(pathname).search;
+        const parsedUrl = url.parse(pathname);
+        const queryString = parsedUrl.search;
+        const { pathname: _pathname } = parsedUrl;
+        if (queryString)
+            pathname = _pathname + queryString;
         else
-            pathname = url.parse(pathname).pathname;
+            pathname = _pathname;
         // console.log("Pathname: " + pathname);
 
         namespace = pathname.split("/", 2);
@@ -33,17 +37,17 @@ async function handler(req, res) {
         // console.log(`Namespace: ${namespace}`);
         pathname = pathname.substr(namespace.length + 2);
 
-        if (fs.existsSync(DIR = DIR + namespace + "/") && namespace && fs.existsSync(DIR + "settings.json")) {
+        if (await exists(DIR = DIR + namespace + "/") && namespace && await exists(DIR + "settings.json")) {
             // console.log("Namespace exist.");
-            settings = JSON.parse(fs.readFileSync(DIR + "settings.json"));
+            settings = JSON.parse(await readFile(DIR + "settings.json"));
             // console.log(settings);
             // console.log("File name: " + pathname);
 
             filehash = SHA256(pathname);
             // console.log("File path hash: " + filehash);
 
-            if (!fs.existsSync(DIR = DIR + "data/"))
-                fs.mkdirSync(DIR);
+            if (await exists(DIR = DIR + "data/"))
+                await mkdir(DIR);
 
             DIR = DIR + filehash + "/";
 
@@ -54,10 +58,10 @@ async function handler(req, res) {
             res.setHeader("Access-Control-Expose-Headers", "*");
             res.setHeader("X-Powered-By", "One");
 
-            if (fs.existsSync(DIR) && fs.existsSync(DIR + "info.json") &&
-                fs.statSync(DIR + "file.data").mtime.getTime() > (Date.now() - settings.expireTime) &&
-                fs.existsSync(DIR + "file.br.data")) {
-                fileinfo = JSON.parse(fs.readFileSync(DIR + "info.json"));
+            if (await exists(DIR) && await exists(DIR + "info.json") &&
+                await stat(DIR + "file.data").mtime.getTime() > (Date.now() - settings.expireTime) &&
+                await exists(DIR + "file.br.data")) {
+                fileinfo = JSON.parse(await readFile(DIR + "info.json"));
 
                 sent = true;
                 // console.log("File type:" + fileinfo.type);
@@ -97,14 +101,14 @@ async function handler(req, res) {
                 sent = true;
                 res.end("Moved");
 
-                if (fs.existsSync(DIR + "do.lock") && (fs.statSync(DIR + "do.lock").mtime.getTime() + 60000) > Date.now()) {
+                if (await exists(DIR + "do.lock") && (await stat(DIR + "do.lock").mtime.getTime() + 60000) > Date.now()) {
                     return;
                 }
 
-                if (!fs.existsSync(DIR))
-                    fs.mkdirSync(DIR);
+                if (await exists(DIR))
+                    await mkdir(DIR);
 
-                fs.writeFileSync(DIR + "do.lock", Date.now(), "utf8");
+                await writeFile(DIR + "do.lock", Date.now(), "utf8");
 
                 sent = true;
                 return new Promise((resolve, reject) => {
@@ -162,13 +166,13 @@ async function handler(req, res) {
                         };
                         // console.log(`[${response.statusCode}] ${filemetadata}`);
 
-                        fs.writeFileSync(DIR + "file.data", body, "binary");
-                        fs.writeFileSync(DIR + "file.gz.data", zlib.gzipSync(body, {
+                        await writeFile(DIR + "file.data", body, "binary");
+                        await writeFile(DIR + "file.gz.data", zlib.gzipSync(body, {
                             level: 9
                         }), "binary");
-                        fs.writeFileSync(DIR + "file.br.data", zlib.brotliCompressSync(body), "binary");
-                        fs.writeFileSync(DIR + "info.json", JSON.stringify(filemetadata), "utf8");
-                        fs.unlinkSync(DIR + "do.lock");
+                        await writeFile(DIR + "file.br.data", zlib.brotliCompressSync(body), "binary");
+                        await writeFile(DIR + "info.json", JSON.stringify(filemetadata), "utf8");
+                        await unlink(DIR + "do.lock");
 
                         resolve();
                     });
