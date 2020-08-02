@@ -1,5 +1,5 @@
 const fs = require('fs')
-const { access, mkdir, readFile, stat, writeFile, unlink } = fs.promises
+const { access, mkdir, readFile, stat, writeFile } = fs.promises
 const path = require('path')
 const request = require('request')
 const fileType = require('file-type')
@@ -9,6 +9,8 @@ const sharp = require('sharp')
 const CleanCss = require('clean-css')
 const zlib = require('zlib')
 const SHA256 = require('crypto-js/sha256')
+
+const processingList = {}
 
 function exists (path) {
   const promise = access(path).then(() => true, err => {
@@ -22,6 +24,14 @@ function exists (path) {
 async function existsAndStat (filename) {
   try {
     return await stat(filename)
+  } catch (error) {
+    return false
+  }
+}
+
+async function existsAndRead (filename) {
+  try {
+    return await readFile(filename)
   } catch (error) {
     return false
   }
@@ -44,8 +54,10 @@ async function handler (req, res) {
 
     let DIR = path.resolve(__dirname, 'Cache/', namespace)
 
-    if (await exists(path.resolve(DIR, 'settings.json'))) {
-      settings = JSON.parse(await readFile(path.resolve(DIR, 'settings.json')))
+    settings = await existsAndRead(path.resolve(DIR, 'settings.json'))
+
+    if (settings !== false) {
+      settings = JSON.parse(settings)
 
       filehash = SHA256(pathname).toString()
 
@@ -58,7 +70,7 @@ async function handler (req, res) {
       res.setHeader('X-Powered-By', 'One')
 
       const filestat = await existsAndStat(path.resolve(DIR, 'file.br.data'))
-      if (filestat && filestat.mtime.getTime() > (Date.now() - settings.expireTime)) {
+      if (!processingList[DIR] && filestat && filestat.mtime.getTime() > (Date.now() - settings.expireTime)) {
         fileinfo = JSON.parse(await readFile(path.resolve(DIR, 'info.json')))
 
         res.setHeader('Content-Type', fileinfo.type)
@@ -93,17 +105,14 @@ async function handler (req, res) {
 
         res.end()
 
+        if (processingList[DIR]) return
+        processingList[DIR] = true
+
         if (!await exists(DIR)) {
           await mkdir(DIR, {
             recursive: true
           })
         }
-
-        if (await exists(path.resolve(DIR, 'do.lock')) && (await stat(path.resolve(DIR, 'do.lock')).mtime.getTime() + 60000) > Date.now()) {
-          return
-        }
-
-        await writeFile(path.resolve(DIR, 'do.lock'), Date.now(), 'utf8')
 
         return new Promise((resolve, reject) => {
           request.get({
@@ -140,7 +149,6 @@ async function handler (req, res) {
             if (filemetadata.indexOf('text/css') !== -1) {
               const data = new CleanCss({}).minify(body.toString())
               if (data.errors.length !== 0) {
-                // console.log(data.errors);
               } else { body = Buffer.from(data.styles) }
             }
 
@@ -149,7 +157,6 @@ async function handler (req, res) {
               size: body.length,
               time: Date.now()
             }
-            // console.log(`[${response.statusCode}] ${filemetadata}`);
 
             await writeFile(path.resolve(DIR, 'file.data'), body, 'binary')
             await writeFile(path.resolve(DIR, 'file.gz.data'), zlib.gzipSync(body, {
@@ -157,7 +164,7 @@ async function handler (req, res) {
             }), 'binary')
             await writeFile(path.resolve(DIR, 'file.br.data'), zlib.brotliCompressSync(body), 'binary')
             await writeFile(path.resolve(DIR, 'info.json'), JSON.stringify(filemetadata), 'utf8')
-            await unlink(path.resolve(DIR, 'do.lock'))
+            delete processingList[DIR]
 
             resolve()
           })
