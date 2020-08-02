@@ -52,7 +52,7 @@ static.xiaolin.in
 
 ~~getxiaol.in~~
 
-~~国内使用腾讯云 CDN，国外使用Azure CDN 因为嫖了个域名没备案所以就裸机扔在了 rixCloud 的 HK 服务器上~~ rixCloue 的服务器又双叒叕炸了，只好搞了下扔到了腾讯云上
+~~国内使用腾讯云 CDN，国外使用Azure CDN 因为嫖了个域名没备案所以就裸机扔在了 rixCloud 的 HK 服务器上~~ rixCloud 的服务器又双叒叕炸了，只好搞了下扔到了腾讯云上
 
 访问 小霖的个人页 并单击 F12 查看 Source 选项卡，静态资源全部都是 static.xiaolin.in 是吧 (x
 
