@@ -104,7 +104,7 @@ async function fetchFile (DIR, filehash, fileurl) {
       }
 
       await writeFile(path.resolve(DIR, 'file.data'), body, 'binary')
-      await writeFile(path.resolve(DIR, 'file.gz.data'), zlib.gzipSync(body, {
+      await writeFile(path.resolve(DIR, 'file.gzip.data'), zlib.gzipSync(body, {
         level: 9
       }), 'binary')
       await writeFile(path.resolve(DIR, 'file.br.data'), zlib.brotliCompressSync(body), 'binary')
