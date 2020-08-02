@@ -1,4 +1,5 @@
 # One
+
 ## 简介
 ~~前段时间(大概是暑假的时候)整理博客的时候发现博客静态资源加载速度太慢了，而且也加载了各种来源的资源，于是就萌发了写一个整合静态资源的小程序，因为只会 PHP，所以自然也就用 PHP 来写了 (x~~
 
@@ -46,9 +47,51 @@
 
 示例代码: `sudo docker run -d -p 3000:3000 -v /path/to/One/Cache:/home/One/Cache one:v0.1`
 
+## 性能
+
+```
+# isXiaoLin/One
+> wrk -t12 -c400 -d10s http://127.0.0.1:3000/avatar/fddaa643e0f9173104dbcb711b363b5f
+Running 10s test @ http://127.0.0.1:3000/avatar/fddaa643e0f9173104dbcb711b363b5f
+  12 threads and 400 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     8.70ms   15.47ms 140.26ms   90.98%
+    Req/Sec     5.18k     2.05k    9.08k    70.97%
+  466580 requests in 10.10s, 1.08GB read
+  Socket errors: connect 155, read 87, write 0, timeout 0
+Requests/sec:  46194.75
+Transfer/sec:    109.21MB
+
+# idawnlight/one-rust debug
+> wrk -t12 -c400 -d10s http://127.0.0.1:8088/test/fddaa643e0f9173104dbcb711b363b5f
+Running 10s test @ http://127.0.0.1:8088/test/fddaa643e0f9173104dbcb711b363b5f
+  12 threads and 400 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    14.29ms   41.30ms   1.60s    94.17%
+    Req/Sec     2.29k     0.89k    9.15k    68.29%
+  205918 requests in 10.10s, 61.86MB read
+  Socket errors: connect 155, read 109, write 0, timeout 4
+Requests/sec:  20387.33
+Transfer/sec:      6.12MB
+
+# idawnlight/one-rust release
+> wrk -t12 -c400 -d10s http://127.0.0.1:8088/test/fddaa643e0f9173104dbcb711b363b5f
+Running 10s test @ http://127.0.0.1:8088/test/fddaa643e0f9173104dbcb711b363b5f
+  12 threads and 400 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     7.28ms   22.27ms   1.02s    92.76%
+    Req/Sec    12.19k     5.28k   29.02k    66.04%
+  1217540 requests in 10.10s, 365.76MB read
+  Socket errors: connect 155, read 104, write 0, timeout 7
+Requests/sec: 120554.33
+Transfer/sec:     36.22MB
+```
+
+疯狂优化才勉强追上了隔壁 Rust 版的屁股, 服气 (
+
 ## DEMO
 
-static.xiaolin.in
+~~static.xiaolin.in~~
 
 ~~getxiaol.in~~
 
